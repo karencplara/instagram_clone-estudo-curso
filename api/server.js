@@ -1,13 +1,17 @@
 var express = require('express'),
     bodyParser = require('body-parser'),
+    multiparty = require('connect-multiparty'),
     mongodb = require('mongodb'),
     objectId = require('mongodb').ObjectID;
+    fs = require('fs'); //arquivos de upload
 
 var app = express();
+
 
 // body-parser
 app.use(bodyParser.urlencoded({extended:true}));
 app.use(bodyParser.json());
+app.use(multiparty());
 
 var port = 8080;
 
@@ -27,7 +31,29 @@ app.get('/', function(req, res){
 
 // POST(create)
 app.post('/api', function(req, res){
-    var dados = req.body;
+
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    
+    var date = new Date();
+    time_stamp = date.getTime();
+
+    var url_image = time_stamp + '_' + req.files.arquivo.originalFilename;
+
+    var path_origem = req.files.arquivo.path;
+    var path_destino = './uploads/' + url_image;
+    
+
+    fs.rename(path_origem, path_destino, function(err){
+      if(err){
+          res.status(500).json({error:err});
+          return;
+      }  
+      dados = {
+          url_imagem: url_image,
+          titulo: req.body.titulo
+      }
+    });
+    
     db.open(function(err, mongoclient){
         mongoclient.collection('postagens', function(err, collection){
             collection.insert(dados, function(err, records){
